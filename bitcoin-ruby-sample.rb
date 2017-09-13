@@ -16,6 +16,17 @@ def bitcoinRPC(method,param)
     JSON.parse(http.request(request).body)["result"]
 end
 
-bitcoinRPC('getinfo',[])
-bitcoinRPC('getnewaddress',["Satoshi-Nakamoto"])
-bitcoinRPC('getaddressesbyaccount',["Satoshi-Nakamoto"])
+@walletinfo = bitcoinRPC('getwalletinfo',[])
+txcount = @walletinfo["txcount"]
+puts @walletinfo
+puts txcount
+@listtransactions = bitcoinRPC('listtransactions',["*", txcount])
+txids = []
+for i in 0..txcount-1 do
+    txid = @listtransactions[i]["txid"]
+    if ((txid !=  @listtransactions[i-1]["txid"]) && txid != nil) 
+        @txids = txids.push(txid)
+    end
+end
+
+puts @txids
