@@ -22,52 +22,66 @@ class BitcoinController < ApplicationController
 #        puts target_address
         target_address = "<address>"
         
-        @walletinfo = bitcoinRPC('getwalletinfo',[])
-        txcount = @walletinfo["txcount"]
+        listreceivedbyaddress = bitcoinRPC('listreceivedbyaddress',[])
+        address_count = listreceivedbyaddress.length
         
-        @listtransactions = bitcoinRPC('listtransactions',["*", txcount])
         txids = []
-        for i in 0..txcount-1 do
-            txid = @listtransactions[i]["txid"]
-            if ((txid !=  @listtransactions[i-1]["txid"]) && txid != nil) 
-                @txids = txids.push(txid)
+        target_txids = []
+        addresses_txid = []
+        for i in 0..address_count-1 do
+            address = listreceivedbyaddress[i]["address"]
+            if address == target_address
+                target_txids = listreceivedbyaddress[i]["txids"]
             end
         end
-        
+
+        txcount = target_txids.length
+
+        for u in 0..txcount-1 do
+            if (u == 0 || target_txids[u] != target_txids[u-1])
+                @txids = txids.push(target_txids[u])
+            end
+        end
+ 
         for j in 0..@txids.length-1 do
             vin_flg = 0
             vout_flg = 0
-            rawtransaction = bitcoinRPC('getrawtransaction',[@txids[j]])
-            @decodedtransaction = bitcoinRPC('decoderawtransaction',[rawtransaction])
-            vin_number = @decodedtransaction["vin"].length
-            for k in 0..vin_number-1 do
-                vin_txid = @decodedtransaction["vin"][k]["txid"]
-                vin_tx_vout = @decodedtransaction["vin"][k]["vout"]
-                vin_rawtransaction = bitcoinRPC('getrawtransaction',[vin_txid])
-                @vin_decodedtransaction = bitcoinRPC('decoderawtransaction',[vin_rawtransaction])
-                vin_address = @vin_decodedtransaction["vout"][vin_tx_vout]["scriptPubKey"]["addresses"][0]
-                if (vin_address == target_address)
-                    vin_flg += 1
-                end  
-            end
+
+            logger.debug @txids[j] 
+            if rawtransaction = bitcoinRPC('getrawtransaction',[@txids[j]])
+                @decodedtransaction = bitcoinRPC('decoderawtransaction',[rawtransaction])
+                vin_number = @decodedtransaction["vin"].length
+                for k in 0..vin_number-1 do
+                    vin_txid = @decodedtransaction["vin"][k]["txid"]
+                    vin_tx_vout = @decodedtransaction["vin"][k]["vout"]
+                    vin_rawtransaction = bitcoinRPC('getrawtransaction',[vin_txid])
+                    @vin_decodedtransaction = bitcoinRPC('decoderawtransaction',[vin_rawtransaction])
+                    vin_address = @vin_decodedtransaction["vout"][vin_tx_vout]["scriptPubKey"]["addresses"][0]
+                    if (vin_address == target_address)
+                        vin_flg += 1
+                    end  
+                end
         
-            vout_number =  @decodedtransaction["vout"].length
-            for l in 0..vout_number-1 do
-                if (@decodedtransaction["vout"][l]["scriptPubKey"]["type"] != "nulldata")
-                    vout_address = @decodedtransaction["vout"][l]["scriptPubKey"]["addresses"][0]
-                    if (vout_address == target_address)
-                        vout_flg += 1
+                vout_number =  @decodedtransaction["vout"].length
+                for l in 0..vout_number-1 do
+                    if (@decodedtransaction["vout"][l]["scriptPubKey"]["type"] != "nulldata")
+                        vout_address = @decodedtransaction["vout"][l]["scriptPubKey"]["addresses"][0]
+                        if (vout_address == target_address)
+                            vout_flg += 1
+                        end
                     end
                 end
-            end
-            if (vin_flg >= 1 || vout_flg >= 1)
- #               puts vin_flg
- #               puts vout_flg
- #               puts @txids[j]
+                if (vin_flg >= 1 || vout_flg >= 1)
+#               puts vin_flg
+#               puts vout_flg
+                
+                @addresses_txid = addresses_txid.push(@txids[j])
+                end
             end
         end
-        @msg = @txids 
-        logger.debug @txids
+
+        @msg = @addresses_txid
+
     end
     
     private
