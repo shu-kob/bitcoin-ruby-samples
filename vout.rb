@@ -33,17 +33,19 @@ class BitcoinController < ApplicationController
 
         txrecords = []
 
-        for k in 0..transactions.length-1 do
-            for l in 0..transactions[k]["vout"].length-1 do
-                if transactions[k]["vout"][l]["scriptPubKey"]["addresses"]
-                    for m in 0..transactions[k]["vout"][l]["scriptPubKey"]["addresses"].length-1 do
-                        if transactions[k]["vout"][l]["scriptPubKey"]["addresses"][m] == target_address
-                            for n in 0..transactions[k]["vin"].length-1 do
-                                vin_rawtx = bitcoinRPC('getrawtransaction',[transactions[k]["vin"][n]["txid"]])
-                                vin_tx = bitcoinRPC('decoderawtransaction',[vin_rawtx])
-                                num = transactions[k]["vin"][n]["vout"]
-                                addresses = vin_tx["vout"][num]["scriptPubKey"]["addresses"]
-                                txrecords.push([transactions[k]["txid"],l, num, addresses, target_address])
+        for k in 0..transactions.length-1 do  # mwU3UJ1VXX3GxKKQHdscw1TvWSrMKdtymR
+            if transactions[k]
+                for l in 0..transactions[k]["vout"].length-1 do
+                     if transactions[k]["vout"][l]["scriptPubKey"]["addresses"]
+                        for m in 0..transactions[k]["vout"][l]["scriptPubKey"]["addresses"].length-1 do
+                            if transactions[k]["vout"][l]["scriptPubKey"]["addresses"][m] == target_address
+                                 for n in 0..transactions[k]["vin"].length-1 do
+                                     vin_rawtx = bitcoinRPC('getrawtransaction',[transactions[k]["vin"][n]["txid"]])
+                                     vin_tx = bitcoinRPC('decoderawtransaction',[vin_rawtx])
+                                     num = transactions[k]["vin"][n]["vout"]
+                                     addresses = vin_tx["vout"][num]["scriptPubKey"]["addresses"]
+                                     txrecords.push([transactions[k]["txid"],l, num, addresses, target_address])
+                                 end
                             end
                         end
                     end
