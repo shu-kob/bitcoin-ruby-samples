@@ -32,20 +32,34 @@ class BitcoinController < ApplicationController
         end
 
         txrecords = []
-
-        for k in 0..transactions.length-1 do  # mwU3UJ1VXX3GxKKQHdscw1TvWSrMKdtymR
-            if transactions[k]
-                for l in 0..transactions[k]["vout"].length-1 do
-                     if transactions[k]["vout"][l]["scriptPubKey"]["addresses"]
-                        for m in 0..transactions[k]["vout"][l]["scriptPubKey"]["addresses"].length-1 do
-                            if transactions[k]["vout"][l]["scriptPubKey"]["addresses"][m] == target_address
-                                 for n in 0..transactions[k]["vin"].length-1 do
-                                     vin_rawtx = bitcoinRPC('getrawtransaction',[transactions[k]["vin"][n]["txid"]])
-                                     vin_tx = bitcoinRPC('decoderawtransaction',[vin_rawtx])
-                                     num = transactions[k]["vin"][n]["vout"]
-                                     addresses = vin_tx["vout"][num]["scriptPubKey"]["addresses"]
-                                     txrecords.push([transactions[k]["txid"],l, num, addresses, target_address])
-                                 end
+        for k in 0..transactions.length-1 do
+            for l in 0 .. transactions[k]["vin"].length - 1 do
+                vin_rawtx = bitcoinRPC('getrawtransaction',[transactions[k]["vin"][l]["txid"]])
+                vin_tx = bitcoinRPC('decoderawtransaction',[vin_rawtx])
+                num = transactions[k]["vin"][l]["vout"]
+                addresses = vin_tx["vout"][num]["scriptPubKey"]["addresses"]
+                for m in 0 .. addresses.length - 1 do
+                    if addresses[m] == target_address
+                        for n in 0 .. transactions[k]["vout"].length - 1 do
+                            sent_addresses = transactions[k]["vout"][n]["scriptPubKey"]["addresses"]
+                            if sent_addresses
+                                txrecords.push([transactions[k]["txid"],"send"])
+                            end
+                        end
+                    else
+                        for x in 0..transactions[k]["vout"].length-1 do
+                            if transactions[k]["vout"][x]["scriptPubKey"]["addresses"]
+                                for y in 0 .. transactions[k]["vout"][x]["scriptPubKey"]["addresses"].length - 1 do
+                                    if transactions[k]["vout"][x]["scriptPubKey"]["addresses"][y] == target_address
+                                        for z in 0..transactions[k]["vin"].length-1 do
+                                            vin_rawtx = bitcoinRPC('getrawtransaction',[transactions[k]["vin"][z]["txid"]])
+                                            vin_tx = bitcoinRPC('decoderawtransaction',[vin_rawtx])
+                                            num = transactions[k]["vin"][z]["vout"]
+                                            addresses = vin_tx["vout"][num]["scriptPubKey"]["addresses"]
+                                            txrecords.push([transactions[k]["txid"],"receive"])
+                                        end
+                                    end
+                                end
                             end
                         end
                     end
@@ -53,7 +67,26 @@ class BitcoinController < ApplicationController
             end
         end
 
-        @msg = txrecords
+        for a in 0 .. txrecords.uniq.length - 1 do
+            raw_tx = bitcoinRPC('getrawtransaction',[txrecords[a][0]])
+            decoded_tx = bitcoinRPC('decoderawtransaction',[raw_tx])
+            for b in 0 .. decoded_tx["vin"].length - 1 do
+                vin_txid = decoded_tx["vin"][b]["txid"]
+                vin_tx_vout = decoded_tx["vin"][b]["vout"]
+                vin_rawtx = bitcoinRPC('getrawtransaction',[vin_txid])
+                vin_decodedtx = bitcoinRPC('decoderawtransaction',[vin_rawtx])
+                vin_address = vin_decodedtx["vout"][vin_tx_vout]["scriptPubKey"]["addresses"][0]
+                vin_value = vin_decodedtx["vout"][vin_tx_vout]["value"]
+            end
+            for c in 0 .. decoded_tx["vout"].length - 1 do
+                if decoded_tx["vout"][c]["scriptPubKey"]["addresses"]
+                    vout_address = decoded_tx["vout"][c]["scriptPubKey"]["addresses"][0]
+                    vout_value = decoded_tx["vout"][c]["value"]
+                end
+            end
+        end
+
+        @msg = "aaa"
 
     end
     
