@@ -67,9 +67,13 @@ class BitcoinController < ApplicationController
             end
         end
 
-        for a in 0 .. txrecords.uniq.length - 1 do
+        for a in 0 .. txrecords.length - 1 do
             raw_tx = bitcoinRPC('getrawtransaction',[txrecords[a][0]])
             decoded_tx = bitcoinRPC('decoderawtransaction',[raw_tx])
+            
+            logger.debug txrecords[a]
+            logger.debug decoded_tx
+
             for b in 0 .. decoded_tx["vin"].length - 1 do
                 vin_txid = decoded_tx["vin"][b]["txid"]
                 vin_tx_vout = decoded_tx["vin"][b]["vout"]
@@ -77,17 +81,20 @@ class BitcoinController < ApplicationController
                 vin_decodedtx = bitcoinRPC('decoderawtransaction',[vin_rawtx])
                 vin_address = vin_decodedtx["vout"][vin_tx_vout]["scriptPubKey"]["addresses"][0]
                 vin_value = vin_decodedtx["vout"][vin_tx_vout]["value"]
+                txrecords[a].push(vin_address, vin_value)
             end
+            txrecords[a].push("->")
             for c in 0 .. decoded_tx["vout"].length - 1 do
                 if decoded_tx["vout"][c]["scriptPubKey"]["addresses"]
                     vout_address = decoded_tx["vout"][c]["scriptPubKey"]["addresses"][0]
                     vout_value = decoded_tx["vout"][c]["value"]
+                    txrecords[a].push(vout_address, vout_value)
                 end
             end
         end
-
-        @msg = "aaa"
-
+        
+        @msg = txrecords.uniq
+        
     end
     
     private
